@@ -3,7 +3,7 @@ PRDC_AD7194
 Analog Devices AD7194 Arduino Library
 --------------------
 
-Release 1.0.0, 27.02.2020.
+Release 1.0.0, 27.02.2021.
 
 - Initial release
 
