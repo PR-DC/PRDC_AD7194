@@ -1,0 +1,42 @@
+#######################################
+# Syntax Coloring Map
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+PRDC_AD7194 KEYWORD1 PRDC_AD7194
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+setSPIFrequency KEYWORD2
+setSPI KEYWORD2
+begin KEYWORD2
+end KEYWORD2
+reset KEYWORD2
+setClockMode KEYWORD2
+setRate KEYWORD2
+setFilter KEYWORD2
+enableNotchFilter KEYWORD2
+enableChop KEYWORD2
+checkID KEYWORD2
+waitReady KEYWORD2
+setPower KEYWORD2
+channelSelect KEYWORD2
+calibrate KEYWORD2
+rangeSetup KEYWORD2
+singleConversion KEYWORD2
+continuousReadAverage KEYWORD2
+temperatureRead KEYWORD2
+rawToVolts KEYWORD2
+printAllRegisters KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+AD7194_DEFAULT_SPI_FREQUENCY LITERAL1
+AD7194_DEFAULT_SPI LITERAL1
+AD7194_DEFAULT_CS LITERAL1
+AD7194_DEFAULT_MISO LITERAL1
