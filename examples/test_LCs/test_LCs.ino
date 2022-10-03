@@ -50,10 +50,11 @@ void setup() {
   } else {
     AD7194.printAllRegisters();
     AD7194.setClockMode(AD7194_CLK_EXT_MCLK2);
-    AD7194.setRate(0x005);
-    AD7194.setFilter(AD7194_MODE_SINC3);
+    AD7194.setRate(0x002);
+    AD7194.setFilter(AD7194_MODE_SINC4);
     AD7194.enableNotchFilter(false);
     AD7194.enableChop(false);
+    AD7194.enableBuffer(true);
     AD7194.rangeSetup(0, AD7194_CONF_GAIN_128); // bipolar, +-12.89 mV
     AD7194.channelSelect(AD7194_CH_0);
   }
