@@ -30,7 +30,7 @@
 #include "Arduino.h"
 #include <SPI.h>
 
-// AD71983 Library debug
+// AD7194 Library debug
 //#define DEBUG_AD7194
 
 // SPI communication settings
@@ -114,9 +114,10 @@
 #define AD7194_CONF_PD_CHAN(x)  (((x) & 0x3FF) << 12)   // Pseudo differential channel select.
 #define AD7194_CONF_CHAN(x)     (((((x)*2) & 0x3FF) << 12) | \
                                 (((((x)*2)+1) & 0x3FF) << 8)) // Channel select.
-#define AD7194_CONF_BURN        (1 << 7)             // Burnout current enable.
+#define AD7194_CONF_NO_BURN     (0 << 7)             // Burnout current disable.
 #define AD7194_CONF_REFDET      (1 << 6)             // Reference detect enable.
 #define AD7194_CONF_BUF         (1 << 4)             // Buffered Mode Enable.
+#define AD7194_CONF_NO_BUF      (0 << 4)             // Buffered Mode Disable.
 #define AD7194_CONF_UNIPOLAR    (1 << 3)             // Unipolar/Bipolar Enable.
 #define AD7194_CONF_GAIN(x)     ((x) & 0x7)          // Gain Select.
 
@@ -178,6 +179,7 @@ class PRDC_AD7194 {
     void setFilter(uint32_t);
     void enableNotchFilter(bool);
     void enableChop(bool);
+    void enableBuffer(bool);
     bool checkID();
     void waitReady();
     void setPower(uint8_t);
@@ -186,6 +188,7 @@ class PRDC_AD7194 {
     void rangeSetup(uint8_t, uint8_t);
     uint32_t singleConversion();
     uint32_t continuousReadAverage(uint32_t);
+    void continuousRead(uint32_t, uint32_t*);
     float temperatureRead();
     float rawToVolts(uint32_t, float);
     void printAllRegisters();
@@ -195,13 +198,19 @@ class PRDC_AD7194 {
     SPIClass* _spi;
     uint8_t _CS;
     uint8_t _MISO;
-    uint8_t _polarity = 0;
-    uint8_t _gain = 1;
+
     uint8_t _clock_mode = AD7194_CLK_INT;
     uint32_t _rate = 0x060;
+
+    uint8_t _polarity = 0;
+    uint8_t _gain = AD7194_CONF_GAIN(AD7194_CONF_GAIN_1);
     uint32_t _filter = AD7194_MODE_SINC4;
     uint32_t _notch_filter = AD7194_MODE_REJ60;
     uint32_t _chop = AD7194_CONF_NO_CHOP;
+    uint32_t _buf = AD7194_CONF_NO_BUF;
+    uint32_t _burnout = AD7194_CONF_NO_BURN;
+    uint8_t _channel = AD7194_CH_0;
+
     void pinInit();
     void beginTransaction();
     void endTransaction();
@@ -209,5 +218,6 @@ class PRDC_AD7194 {
     uint32_t getSingleRegister(uint8_t, uint8_t);
     void setRegister(uint8_t, uint32_t, uint8_t);
     void setSingleRegister(uint8_t, uint32_t, uint8_t);
+    void updateConf(void);
 };
 #endif // _PRDC_AD7194_H_

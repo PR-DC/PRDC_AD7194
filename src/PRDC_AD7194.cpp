@@ -241,6 +241,8 @@ void PRDC_AD7194::setFilter(uint32_t filter) {
   #endif
   
   _filter = filter;
+
+  updateConf();
 }
 
 // enableNotchFilter() function
@@ -256,6 +258,8 @@ void PRDC_AD7194::enableNotchFilter(bool notch_state) {
   } else {
     _notch_filter = AD7194_MODE_NO_REJ60;
   }
+
+  updateConf();
 }
 
 // enableChop() function
@@ -271,7 +275,49 @@ void PRDC_AD7194::enableChop(bool chop_state) {
   } else {
     _chop = AD7194_CONF_NO_CHOP;
   }
+
+  updateConf();
 }
+
+// enableBuffer() function
+// Turn on or off buffer;
+// --------------------
+void PRDC_AD7194::enableBuffer(bool buffer_state) {
+  #ifdef DEBUG_AD7194
+    Serial.println(F("enableBuffer()"));
+  #endif
+  
+  if(buffer_state) {
+    _buf = AD7194_CONF_BUF;
+  } else {
+    _buf = AD7194_CONF_NO_BUF;
+  }
+  
+  updateConf();
+}
+
+// updateConf() function
+// Update conf register
+// --------------------
+void PRDC_AD7194::updateConf(void) {
+  #ifdef DEBUG_AD7194
+    Serial.println(F("updateConf()"));
+  #endif
+  
+  uint32_t command = AD7194_CONF_CHAN(_channel) | 
+                    (_polarity * AD7194_CONF_UNIPOLAR) |
+                    _gain |
+                    _filter |
+                    _notch_filter | 
+                    _chop |
+                    _buf |
+                    _burnout; 
+                        
+  this->beginTransaction();
+  this->setRegister(AD7194_REG_CONF, command, 3);
+  this->endTransaction();
+}
+
 // checkID() function
 // Check ADC ID register
 // --------------------
@@ -324,22 +370,10 @@ void PRDC_AD7194::channelSelect(uint8_t channel) {
   #ifdef DEBUG_AD7194
     Serial.println(F("channelSelect()"));
   #endif
-  uint32_t newRegValue;
-  uint32_t oldRegValue = this->getSingleRegister(AD7194_REG_CONF, 3);
-  oldRegValue &= ~(AD7194_CONF_CHAN(0x3FF));
-  if(oldRegValue & AD7194_CONF_PSEUDO) {
-    newRegValue = oldRegValue | AD7194_CONF_PD_CHAN(channel);   
-  } else {
-    if(channel > 15) { 
-      newRegValue = oldRegValue | (1 << 16);
-    } else {
-      if(channel > 7) {
-        channel -= 8;
-      }
-      newRegValue = oldRegValue | AD7194_CONF_CHAN(channel);
-    }
-  }
-  this->setSingleRegister(AD7194_REG_CONF, newRegValue, 3);
+  
+  _channel = channel;
+
+  updateConf();
 }
 
 // calibrate() function
@@ -368,16 +402,9 @@ void PRDC_AD7194::rangeSetup(uint8_t polarity, uint8_t range) {
     Serial.println(F("rangeSetup()"));
   #endif
   
-  uint32_t oldRegValue = this->getSingleRegister(AD7194_REG_CONF, 3);
-  oldRegValue &= ~(AD7194_CONF_UNIPOLAR |
-                   AD7194_CONF_GAIN(0x7));
-  uint32_t newRegValue = oldRegValue | 
-                        (polarity * AD7194_CONF_UNIPOLAR) |
-                        AD7194_CONF_GAIN(range); 
-  this->setSingleRegister(AD7194_REG_CONF, newRegValue, 3);
-
   _polarity = polarity;
-  _gain = 1 << range;
+  _gain = AD7194_CONF_GAIN(range);
+  updateConf();
 }
 
 // singleConversion() function
@@ -390,10 +417,7 @@ uint32_t PRDC_AD7194::singleConversion() {
   
   uint32_t command = AD7194_MODE_SEL(AD7194_MODE_SINGLE) | 
                      AD7194_MODE_CLKSRC(_clock_mode) |
-                     AD7194_MODE_RATE(_rate) |
-                     _filter |
-                     _notch_filter |
-                     _chop;    
+                     AD7194_MODE_RATE(_rate);    
   this->beginTransaction();
   this->setRegister(AD7194_REG_MODE, command, 3);
   this->waitReady();
@@ -414,10 +438,7 @@ uint32_t PRDC_AD7194::continuousReadAverage(uint32_t sampleNumber) {
   uint32_t samplesAverage = 0;  
   uint32_t command = AD7194_MODE_SEL(AD7194_MODE_CONT) | 
                      AD7194_MODE_CLKSRC(_clock_mode) |
-                     AD7194_MODE_RATE(_rate) | 
-                     _filter |
-                     _notch_filter |
-                     _chop;
+                     AD7194_MODE_RATE(_rate);
             
   this->beginTransaction();
   this->setRegister(AD7194_REG_MODE, command, 3);
@@ -428,6 +449,27 @@ uint32_t PRDC_AD7194::continuousReadAverage(uint32_t sampleNumber) {
   this->endTransaction();
   
   return samplesAverage/sampleNumber;
+}
+
+// continuousRead() function
+// Executes continuous read command and puts readings in a buffer
+// --------------------
+void PRDC_AD7194::continuousRead(uint32_t sampleNumber, uint32_t *buffer) {
+  #ifdef DEBUG_AD7194
+    Serial.println(F("readAverage()"));
+  #endif
+   
+  uint32_t command = AD7194_MODE_SEL(AD7194_MODE_CONT) | 
+                     AD7194_MODE_CLKSRC(_clock_mode) |
+                     AD7194_MODE_RATE(_rate);
+            
+  this->beginTransaction();
+  this->setRegister(AD7194_REG_MODE, command, 3);
+  for(uint32_t i = 0; i < sampleNumber; i++) {
+    this->waitReady();
+    buffer[i] = this->getRegister(AD7194_REG_DATA, 3);
+  }
+  this->endTransaction();
 }
 
 // temperatureRead() function
